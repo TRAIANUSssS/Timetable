@@ -130,7 +130,6 @@ class MainWindow(QWidget):
 
         self.monday_table[id].setRowCount(len(records))
 
-
         for i, r in enumerate(records):
             r = list(r)
             print(i, r)
