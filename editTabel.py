@@ -21,10 +21,17 @@ class MainWindow(QWidget):
         self.tabs = QTabWidget(self)
         self.vbox.addWidget(self.tabs)
 
-        self._create_shedule_tab()
+        self.days_par_gbox = [] #QGroupBox("Monday")
+        self.days_nonpar_gbox = [] #QGroupBox("Monday NP")
+        self.days_lines_svbox = [] # QHBoxLayout()
 
-        self.week_days = ['Понедельник']
+        self.day_table = []
+        self.dvbox = []
+
+        self.week_days = ['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота',]
         self.all_timetabel = self.getAllTimeTabel()
+
+        self._create_shedule_tab()
 
 
     def _connect_to_db(self):
@@ -42,7 +49,8 @@ class MainWindow(QWidget):
 
         self.svbox = QVBoxLayout()
 
-        self.create_monday_line()
+        #self.create_monday_line()
+        self.create_week_days()
         self.create_update_all_button()
         self.create_tabel()
         #self._create_monday_table()
@@ -86,21 +94,29 @@ class MainWindow(QWidget):
     def update_tabel(self, id):
         print(id)
 
-    def create_tabel(self):
-        self.monday_table = []
-        self.mvbox = []
-        for i in range(1):
-            self.monday_table.append(QTableWidget())
-            self.monday_table[i].setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContents)
+    def create_week_days(self):
+        for i in range(6):
+            self.days_par_gbox.append(QGroupBox(self.week_days[i] + ' чётный'))
+            self.days_nonpar_gbox.append(QGroupBox(self.week_days[i] + ' нечётный'))
+            self.days_lines_svbox.append(QHBoxLayout())
 
-            self.monday_table[i].setColumnCount(4)
-            self.monday_table[i].setHorizontalHeaderLabels(["Subject", "Time", "Audience", "Teacher"])
+            self.svbox.addLayout(self.days_lines_svbox[i])
+            self.days_lines_svbox[i].addWidget(self.days_par_gbox[i])
+            self.days_lines_svbox[i].addWidget(self.days_nonpar_gbox[i])
+
+    def create_tabel(self):
+        for i in range(6):
+            self.day_table.append(QTableWidget())
+            self.day_table[i].setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContents)
+
+            self.day_table[i].setColumnCount(4)
+            self.day_table[i].setHorizontalHeaderLabels(["Subject", "Time", "Audience", "Teacher"])
 
             self._update_monday_table(i)
 
-            self.mvbox.append(QVBoxLayout())
-            self.mvbox[i].addWidget(self.monday_table[i])
-            self.monday_gbox.setLayout(self.mvbox[i])
+            self.dvbox.append(QVBoxLayout())
+            self.dvbox[i].addWidget(self.day_table[i])
+            self.days_par_gbox[i].setLayout(self.dvbox[i])
 
     def _create_monday_table(self):
         self.monday_table = QTableWidget()
@@ -128,19 +144,19 @@ class MainWindow(QWidget):
         records = list(self.cursor.fetchall())
         print(len(records), records)
 
-        self.monday_table[id].setRowCount(len(records))
+        self.day_table[id].setRowCount(len(records))
 
         for i, r in enumerate(records):
             r = list(r)
             print(i, r)
             #joinButton = buttons[i]
-            self.monday_table[id].setItem(i, 0,
+            self.day_table[id].setItem(i, 0,
                                       QTableWidgetItem(str(r[3])))
-            self.monday_table[id].setItem(i, 1,
+            self.day_table[id].setItem(i, 1,
                                       QTableWidgetItem(str(r[4])))
-            self.monday_table[id].setItem(i, 2,
+            self.day_table[id].setItem(i, 2,
                                       QTableWidgetItem(str(r[5])))
-            self.monday_table[id].setItem(i, 3,
+            self.day_table[id].setItem(i, 3,
                                       QTableWidgetItem(str(r[6])))
             '''self.monday_table.setCellWidget(i, 4, buttons[i])
 
@@ -151,12 +167,12 @@ class MainWindow(QWidget):
                 lambda: self._change_day_from_table(i, "monday"))'''
 
             #self.create_button(records, i, id)
-        self.monday_table[id].resizeRowsToContents()
+        self.day_table[id].resizeRowsToContents()
 
     def create_button(self, rec, i, id):
         print('created button')
         joinButton = QPushButton("Join", self)
-        self.monday_table[id].setCellWidget(i, 4, joinButton)
+        self.day_table[id].setCellWidget(i, 4, joinButton)
         joinButton.clicked.connect(lambda: print(rec[i][0]))
         joinButton.clicked.connect(lambda: self._change_day_from_table(i, "monday"))
 
