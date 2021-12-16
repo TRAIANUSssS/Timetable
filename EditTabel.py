@@ -464,7 +464,7 @@ class MainWindow(QWidget):
         # print(records)
         return records
 
-MainWindow.subjects_records
+
 app = QApplication(sys.argv)
 win = MainWindow()
 win.show()
