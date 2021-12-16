@@ -108,8 +108,8 @@ class MainWindow(QWidget):
             else:
                 self.days_nonpar_gbox[i // 2].setLayout(self.dvbox[i])
 
-    # Запись в таблицы с предметами
-    def find_data_for_tabels(self, start = True):
+    # Находим данные для основных таблиц
+    def find_data_for_tabels(self,):
         self.subjects_combo_days_table = []
         self.subjects_days_table_list_names = []
         self.teachers_combo_days_table = []
@@ -143,7 +143,7 @@ class MainWindow(QWidget):
 
             self.upload_tables(id, records)
 
-
+    # Загружаем данные в таблицу
     def upload_tables(self, id, records):
         self.subjects_combo_days_table[id]=[]
         self.subjects_days_table_list_names[id]=[]
@@ -168,11 +168,15 @@ class MainWindow(QWidget):
         self.day_table[id].resizeRowsToContents()
         self.day_table[id].resizeColumnsToContents()
 
+    # Создание выпадающего списка с преподователями
     def create_days_table_teachers_list(self, id, column, row, clear=True, first_teacher=None):
         combo = QComboBox(self)
         combo.addItems(self.find_techers(id, row, clear, first_teacher))
         self.teachers_combo_days_table[id].append(QHBoxLayout())
-        self.teachers_combo_days_table[id][len(self.teachers_combo_days_table[id]) - 1].addWidget(combo)
+        try:
+            self.teachers_combo_days_table[id][len(self.teachers_combo_days_table[id]) - 1].addWidget(combo)
+        except:
+            pass
         self.day_table[id].setCellWidget(row, column, combo)
         self.teachers_days_table_list_names[id].append(combo.currentText())
         combo.activated[str].connect(
@@ -180,16 +184,7 @@ class MainWindow(QWidget):
         #combo.activated[str].connect(
         #    lambda: self.onActivated(self.upload_tabels()))
 
-    def set_new_list_teachers(self, id, column, row, clear, first_teacher):
-        combo = QComboBox(self)
-        combo.addItems(self.find_techers(id, row, clear, first_teacher))
-        self.teachers_combo_days_table[id][row] = QHBoxLayout()
-        self.teachers_combo_days_table[id][row].addWidget(combo)
-        self.day_table[id].setCellWidget(row, column, combo)
-        self.teachers_days_table_list_names[id][row] = combo.currentText()
-        combo.activated[str].connect(
-            lambda: self.onActivated(combo.currentText(), row, self.teachers_days_table_list_names[id], True))
-
+    # Находим нужных нам учителей
     def find_techers(self, id, row, clear, first_teacher):
         subj = self.subjects_days_table_list_names[id][row]
         index_list = []
@@ -258,12 +253,27 @@ class MainWindow(QWidget):
             # joinButton = buttons[i]
             self.day_table[13].setItem(i, 0, QTableWidgetItem(str(self.teachers_records[i][0])))
             self.create_subjects_list(self.teachers_records[i][1], start, i)
+
         self.add_table_button = QPushButton("+")
         self.day_table[13].setCellWidget(len(self.teachers_records), 0, self.add_table_button)
         self.add_table_button.clicked.connect(lambda: self.add_teachers_table())
 
+        self.delete_table_button = QPushButton("-")
+        self.day_table[13].setCellWidget(len(self.teachers_records), 1, self.delete_table_button)
+        self.delete_table_button.clicked.connect(lambda: self.delete_teachers_table())
+
         self.day_table[13].resizeRowsToContents()
         self.day_table[13].resizeColumnsToContents()
+
+    def delete_teachers_table(self):
+        for i in range(self.day_table[13].rowCount() - 2):
+            self.teachers_records[i] = tuple(
+                list((str(self.day_table[13].item(i, 0).text()), self.subjects_teachers_table_list_names[i])))
+        self.day_table[13].clearContents()
+        #self.update_subsidiary_tabel(6,1)
+        self.cursor.execute("DELETE FROM teachers WHERE id = (SELECT id FROM teachers ORDER BY id DESC LIMIT 1)")
+        self.conn.commit()
+        self.update_teachers_table(True)
 
     # Заполнение и создание выподающего списка в таблице с преподами
     def create_subjects_list(self, first_word, start, i):
@@ -297,7 +307,6 @@ class MainWindow(QWidget):
         print(records)
         self.upload_tables(id,records)
 
-
     # Сохранение выбраной переменной из выпадающего списка
     def onActivated(self, text, id, var):
         print(text)
@@ -329,10 +338,10 @@ class MainWindow(QWidget):
         if start == True:
             self.cursor.execute(f"SELECT * FROM {self.tables_names[7]};")
             self.subjects_records = list(self.cursor.fetchall())
-            self.day_table[12].setRowCount(len(self.subjects_records) + 1)
+            self.day_table[12].setRowCount(len(self.subjects_records) + 2)
             self.day_table[12].setColumnCount(1)
         else:
-            self.day_table[12].setRowCount(len(self.subjects_records) + 1)
+            self.day_table[12].setRowCount(len(self.subjects_records) + 2)
         # print(self.subjects_records)
         # print(len(self.subjects_records))
 
@@ -343,12 +352,24 @@ class MainWindow(QWidget):
         self.day_table[12].setCellWidget(len(self.subjects_records), 0, self.add_subjects_button)
         self.add_subjects_button.clicked.connect(lambda: self.add_button_subjects())
 
+        self.delete_subjects_button = QPushButton("-")
+        self.day_table[12].setCellWidget(len(self.subjects_records)+1, 0, self.delete_subjects_button)
+        self.delete_subjects_button.clicked.connect(lambda: self.delete_button_subjects())
+
         self.day_table[12].resizeRowsToContents()
         self.day_table[12].resizeColumnsToContents()
 
+    def delete_button_subjects(self):
+        for i in range(self.day_table[12].rowCount() - 3):
+            self.subjects_records[i] = tuple(list((str(self.day_table[12].item(i, 0).text()), '')))
+        self.day_table[12].clearContents()
+        self.cursor.execute("DELETE FROM subjects WHERE id = (SELECT id FROM subjects ORDER BY id DESC LIMIT 1)")
+        self.conn.commit()
+        self.update_subjects_table(True)
+
     # Добавление новой строки в таблицу с предметами
     def add_button_subjects(self):
-        for i in range(self.day_table[12].rowCount() - 1):
+        for i in range(self.day_table[12].rowCount() - 2):
             self.subjects_records[i] = tuple(list((str(self.day_table[12].item(i, 0).text()), '')))
         self.day_table[12].clearContents()
         self.subjects_records.append(tuple(list(('', ''))))
@@ -373,25 +394,36 @@ class MainWindow(QWidget):
             self.update_button.clicked.connect(lambda: self.update_subsidiary_tabel(i))
 
     # Обновление доп таблиц
-    def update_subsidiary_tabel(self, tab_id):
+    def update_subsidiary_tabel(self, tab_id, count = 0):
         self.cursor.execute(f"DELETE FROM {self.tables_names[tab_id]}")
         self.conn.commit()
         if tab_id == 7:
-            for i in range(self.day_table[12].rowCount() - 1):
-                self.cursor.execute(
-                    f"INSERT INTO {self.tables_names[tab_id]}  (subjects) VALUES (%s);",
-                    (str(self.day_table[12].item(i, 0).text()),))
-                self.conn.commit()
-            self.add_teachers_table(False)
+            for i in range(self.day_table[12].rowCount() - 1 - count):
+                try:
+                    self.cursor.execute(
+                        f"INSERT INTO {self.tables_names[tab_id]}  (subjects) VALUES (%s);",
+                        (str(self.day_table[12].item(i, 0).text()),))
+                    self.conn.commit()
+                except:
+                    pass
+                    # self.cursor.execute(
+                    #     f"INSERT INTO {self.tables_names[tab_id]}  (subjects) VALUES (%s);",
+                    #     (str(''),))
         else:
-            for i in range(self.day_table[13].rowCount() - 1):
+            for i in range(self.day_table[13].rowCount() - 1 - count):
                 # print(self.self.subjects_combo_teachers_table[i])
                 # print(self.day_table[13].item(i, 0))
+                print(i)
                 self.cursor.execute(
                     f"INSERT INTO {self.tables_names[tab_id]}  (teachers, subjects) VALUES (%s,%s);",
                     (str(self.day_table[13].item(i, 0).text()),
                      str(self.subjects_teachers_table_list_names[i])))
                 self.conn.commit()
+        for i in range(6):
+            self.update_subjects_table(i)
+        self.create_subject_tabel()
+        self.create_teachers_table()
+        self.find_data_for_tabels()
 
     # Обновление таблиц дней недели
     def update_days_tabel(self, id):
@@ -432,7 +464,7 @@ class MainWindow(QWidget):
         # print(records)
         return records
 
-
+MainWindow.subjects_records
 app = QApplication(sys.argv)
 win = MainWindow()
 win.show()
