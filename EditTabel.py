@@ -47,7 +47,7 @@ class MainWindow(QWidget):
         self.create_update_buttons()
         self.create_subject_tabel()
         self.create_teachers_table()
-        self.upload_tabels()
+        self.find_data_for_tabels()
 
         for i in range(8):
             self.days_tabs[i].setLayout(self.tabs_vbox[i])
@@ -109,9 +109,11 @@ class MainWindow(QWidget):
                 self.days_nonpar_gbox[i // 2].setLayout(self.dvbox[i])
 
     # Запись в таблицы с предметами
-    def upload_tabels(self):
+    def find_data_for_tabels(self, start = True):
         self.subjects_combo_days_table = []
         self.subjects_days_table_list_names = []
+        self.teachers_combo_days_table = []
+        self.teachers_days_table_list_names = []
         for id in range(12):
             self.cursor.execute(f"SELECT * FROM {self.tables_names[id // 2]} Where parity=%s AND week_day=%s",
                                 (str(True if id % 2 == 0 else False), str(self.tabs_names[id // 2])))
@@ -136,21 +138,81 @@ class MainWindow(QWidget):
             self.day_table[id].setRowCount(len(records))
             self.subjects_combo_days_table.append([])
             self.subjects_days_table_list_names.append([])
+            self.teachers_combo_days_table.append([])
+            self.teachers_days_table_list_names.append([])
 
-            for i, r in enumerate(records):
-                r = list(r)
-                # print(i, r)
-                # joinButton = buttons[i]
-                if str(r[4]) == '':
-                    self.create_days_tabels_subjects_list(id, 0, i, True)
-                    # self.day_table[id].setItem(i, 0, QTableWidgetItem(str(r[4])))
-                else:
-                    self.create_days_tabels_subjects_list(id, 0, i, False, str(r[4]))
-                self.day_table[id].setItem(i, 1, QTableWidgetItem(str(r[5])))
-                self.day_table[id].setItem(i, 2, QTableWidgetItem(str(r[6])))
-                if str(r[7]) == '':
-                    self.day_table[id].setItem(i, 3, QTableWidgetItem(str(r[7])))
-            self.day_table[id].resizeRowsToContents()
+            self.upload_tables(id, records)
+
+
+    def upload_tables(self, id, records):
+        self.subjects_combo_days_table[id]=[]
+        self.subjects_days_table_list_names[id]=[]
+        self.teachers_combo_days_table[id]=[]
+        self.teachers_days_table_list_names[id]=[]
+
+        for i, r in enumerate(records):
+            r = list(r)
+            # print(i, r)
+            # joinButton = buttons[i]
+            if str(r[4]) == '':
+                self.create_days_tabels_subjects_list(id, 0, i, True)
+                # self.day_table[id].setItem(i, 0, QTableWidgetItem(str(r[4])))
+            else:
+                self.create_days_tabels_subjects_list(id, 0, i, False, str(r[4]))
+            self.day_table[id].setItem(i, 1, QTableWidgetItem(str(r[5])))
+            self.day_table[id].setItem(i, 2, QTableWidgetItem(str(r[6])))
+            if str(r[7]) == '':
+                self.create_days_table_teachers_list(id, 3, i, True)
+            else:
+                self.create_days_table_teachers_list(id, 3, i, False, str(r[7]))
+        self.day_table[id].resizeRowsToContents()
+        self.day_table[id].resizeColumnsToContents()
+
+    def create_days_table_teachers_list(self, id, column, row, clear=True, first_teacher=None):
+        combo = QComboBox(self)
+        combo.addItems(self.find_techers(id, row, clear, first_teacher))
+        self.teachers_combo_days_table[id].append(QHBoxLayout())
+        self.teachers_combo_days_table[id][len(self.teachers_combo_days_table[id]) - 1].addWidget(combo)
+        self.day_table[id].setCellWidget(row, column, combo)
+        self.teachers_days_table_list_names[id].append(combo.currentText())
+        combo.activated[str].connect(
+            lambda: self.onActivated(combo.currentText(), row, self.teachers_days_table_list_names[id]))
+        #combo.activated[str].connect(
+        #    lambda: self.onActivated(self.upload_tabels()))
+
+    def set_new_list_teachers(self, id, column, row, clear, first_teacher):
+        combo = QComboBox(self)
+        combo.addItems(self.find_techers(id, row, clear, first_teacher))
+        self.teachers_combo_days_table[id][row] = QHBoxLayout()
+        self.teachers_combo_days_table[id][row].addWidget(combo)
+        self.day_table[id].setCellWidget(row, column, combo)
+        self.teachers_days_table_list_names[id][row] = combo.currentText()
+        combo.activated[str].connect(
+            lambda: self.onActivated(combo.currentText(), row, self.teachers_days_table_list_names[id], True))
+
+    def find_techers(self, id, row, clear, first_teacher):
+        subj = self.subjects_days_table_list_names[id][row]
+        index_list = []
+        teachers_list = []
+        if subj != 'Нет пары':
+             print(subj)
+
+        for i in range(len(self.subjects_teachers_table_list_names)):
+            # if subj != 'Нет пары':
+            #     print(subj, self.subjects_teachers_table_list_names[i])
+            if self.subjects_teachers_table_list_names[i] == subj:
+                # if subj != 'Нет пары':
+                #     print(self.subjects_teachers_table_list_names[i], subj)
+                index_list.append(i)
+        for i in range(len(index_list)):
+            teachers_list.append(self.day_table[13].item(index_list[i], 0).text())
+            #print(teachers_list[i])
+        if clear == False:
+            for i in range(len(teachers_list)):
+                if teachers_list[i] == first_teacher:
+                    teachers_list[i] = teachers_list[0]
+                    teachers_list[0] = first_teacher
+        return teachers_list
 
     # Создание и заполнение списка с предматами в таблицах с днями
     def create_days_tabels_subjects_list(self, id, column, row, clear=True, first_word=None):
@@ -163,7 +225,8 @@ class MainWindow(QWidget):
         self.subjects_combo_days_table[id][len(self.subjects_combo_days_table[id]) - 1].addWidget(combo)
         self.day_table[id].setCellWidget(row, column, combo)
         self.subjects_days_table_list_names[id].append(combo.currentText())
-        combo.activated[str].connect(lambda: self.onActivated(combo.currentText(), row, self.subjects_days_table_list_names[id]))
+        combo.activated[str].connect(
+            lambda: self.onActivated_days_tables(combo.currentText(), row, self.subjects_days_table_list_names[id], id))
 
     # Создание таблицы с преподавателями
     def create_teachers_table(self):
@@ -205,20 +268,39 @@ class MainWindow(QWidget):
     # Заполнение и создание выподающего списка в таблице с преподами
     def create_subjects_list(self, first_word, start, i):
         combo = QComboBox(self)
-        if start == True:
-            combo.addItems(self.get_subject_list(start))
-        else:
-            combo.addItems(self.get_subject_list(start, first_word))
+        #if first_word != 'Нет пары':
+        #if start == True:
+        #    combo.addItems(self.get_subject_list(start))
+        #else:
+        combo.addItems(self.get_subject_list(False, first_word))
         self.subjects_combo_teachers_table.append(QHBoxLayout())
         self.subjects_combo_teachers_table[len(self.subjects_combo_teachers_table) - 1].addWidget(combo)
         self.day_table[13].setCellWidget(i, 1, combo)
         self.subjects_teachers_table_list_names.append(combo.currentText())
-        combo.activated[str].connect(lambda: self.onActivated(combo.currentText(), i, self.subjects_teachers_table_list_names))
-        #print(len(self.subjects_combo_teachers_table))
+        combo.activated[str].connect(
+            lambda: self.onActivated(combo.currentText(), i, self.subjects_teachers_table_list_names))
+        # print(len(self.subjects_combo_teachers_table))
+
+    def onActivated_days_tables(self, text, row,var,id):
+        print(text)
+        records = []
+        print(records)
+        for i in range(5):
+            records.append([])
+            for j in range(4):
+                records[i].append('')
+            records[i].append(self.subjects_days_table_list_names[id][i])
+            records[i].append(self.day_table[id].item(i, 1).text())
+            records[i].append(self.day_table[id].item(i, 2).text())
+            records[i].append('')
+        records[row][4] = text
+        print(records)
+        self.upload_tables(id,records)
+
 
     # Сохранение выбраной переменной из выпадающего списка
     def onActivated(self, text, id, var):
-        #print(id)
+        print(text)
         var[id] = text
 
     # Добавление строки в таблицу с учителями или обновление этой таблицы
@@ -251,8 +333,8 @@ class MainWindow(QWidget):
             self.day_table[12].setColumnCount(1)
         else:
             self.day_table[12].setRowCount(len(self.subjects_records) + 1)
-        #print(self.subjects_records)
-        #print(len(self.subjects_records))
+        # print(self.subjects_records)
+        # print(len(self.subjects_records))
 
         for i in range(len(self.subjects_records)):
             # joinButton = buttons[i]
@@ -319,13 +401,16 @@ class MainWindow(QWidget):
             '''print(id + 6 * k)'''
             for i in range(self.day_table[id * 2 + k].rowCount()):
                 row = []
-                for j in range(self.day_table[id * 2 + k].rowCount() - 1):
-                    try:
+                for j in range(self.day_table[id * 2 + k].columnCount()):
+
+                    if j == 1 or j == 2:
                         row.append(self.day_table[id * 2 + k].item(i, j).text())
-                    except:
+                    elif j == 0:
                         row.append(self.subjects_days_table_list_names[id * 2 + k][i])
-                #print(self.subjects_days_table_list_names[0])
-                #print(row)
+                    else:
+                        row.append(self.teachers_days_table_list_names[id * 2 + k][i])
+                # print(self.subjects_days_table_list_names[0])
+                # print(row)
                 self.cursor.execute(
                     f"INSERT INTO {self.tables_names[id]}  (subject, time, audience, teacher, parity, week_day, number) VALUES (%s,%s,%s,%s,%s,%s,%s);",
                     ((str(row[0]), str(row[1]), str(row[2]), str(row[3]), str(True if k % 2 == 0 else False),
@@ -344,7 +429,7 @@ class MainWindow(QWidget):
                 if records[i] == first_word:
                     records[i] = records[0]
                     records[0] = first_word
-        #print(records)
+        # print(records)
         return records
 
 
