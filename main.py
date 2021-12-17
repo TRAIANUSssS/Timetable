@@ -56,7 +56,7 @@ def answer(message):
         if index <= 5:
             printTimetabel(message, index)
         if index == 6:
-            bot.send_message(message.chat.id, 'Этот день создан для отдыха')
+            bot.send_message(message.chat.id, 'Этот день создан для отдыха!')
         if index == 7 or index == 8:
             printTimetabel(message, index, True, int((index + 1) % 2))
 
