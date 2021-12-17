@@ -42,6 +42,11 @@ def tooday_week(message):
     bot.send_message(message.chat.id, f'Текущая неделя: {week}')
 
 
+@bot.message_handler()
+def wrong(message: types.Message):
+    bot.send_message(message.chat.id, 'Неверная команда!')
+
+
 @bot.message_handler(content_types=['text'])
 def answer(message):
     if message.text in all_buttons:
@@ -54,11 +59,6 @@ def answer(message):
             bot.send_message(message.chat.id, 'Этот день создан для отдыха')
         if index == 7 or index == 8:
             printTimetabel(message, index, True, int((index + 1) % 2))
-
-
-@bot.message_handler()
-def wrong(message: types.Message):
-    bot.send_message(message.chat.id, 'Неверная команда!')
 
 
 def printTimetabel(message, index, all_days=False, reverse_parity=0):
