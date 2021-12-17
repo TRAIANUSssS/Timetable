@@ -19,10 +19,6 @@ conn = psycopg2.connect(database="timetabel_db",
                         port="5432")
 cursor = conn.cursor()
 
-@bot.message_handler()
-def wrong(message: types.Message):
-    bot.send_message(message.chat.id, 'Неверная команда!')
-
 
 @bot.message_handler(commands=['start'])
 def start(message):
