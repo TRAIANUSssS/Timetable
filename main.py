@@ -68,6 +68,7 @@ def printTimetabel(message, index, all_days=False, reverse_parity=0):
         par = False if parity == 0 else True
     # print('четность ' + str(par))
 
+    line = ' '
     if all_days == False:
         cursor.execute(f"SELECT * FROM {tabels_names[index]}")
         records = list(cursor.fetchall())
@@ -77,7 +78,6 @@ def printTimetabel(message, index, all_days=False, reverse_parity=0):
         for i in range(6):
             cursor.execute(f"SELECT * FROM {tabels_names[i]}")
             records = list(cursor.fetchall())
-            line = ' '
             line += get_line_with_timetable(records, par, index)
     bot.send_message(message.chat.id, line)
 
