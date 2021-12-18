@@ -60,7 +60,6 @@ def wrong(message: types.Message):
 
 @bot.message_handler(content_types=['text'])
 def answer(message):
-    print(42)
     if message.text in all_buttons:
         if parity == -1:
             calc_parity()

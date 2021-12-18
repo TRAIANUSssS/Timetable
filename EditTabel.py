@@ -1,6 +1,5 @@
 import psycopg2
 import sys
-import contextlib
 
 from PyQt5.QtWidgets import (QApplication, QWidget,
                              QTabWidget, QAbstractScrollArea,
@@ -282,6 +281,18 @@ class MainWindow(QWidget):
         self.day_table[13].resizeRowsToContents()
         self.day_table[13].resizeColumnsToContents()
 
+    # Добавление строки в таблицу с учителями или обновление этой таблицы
+    def add_teachers_table(self, flag=True):
+        for i in range(self.day_table[13].rowCount() - 1):
+            self.teachers_records[i] = tuple(
+                list((str(self.day_table[13].item(i, 0).text()), self.subjects_teachers_table_list_names[i])))
+        self.day_table[13].clearContents()
+        if flag:
+            self.teachers_records.append(tuple(list(('', ''))))
+            self.cursor.execute("INSERT INTO teachers (teachers, subjects) VALUES ('', '')")
+            self.conn.commit()
+        self.update_teachers_table(False)
+
     def delete_teachers_table(self):
         for i in range(self.day_table[13].rowCount() - 2):
             self.teachers_records[i] = tuple(
@@ -323,18 +334,6 @@ class MainWindow(QWidget):
     def on_activated(self, text, index, var):
         #print(text)
         var[index] = text
-
-    # Добавление строки в таблицу с учителями или обновление этой таблицы
-    def add_teachers_table(self, flag=True):
-        for i in range(self.day_table[13].rowCount() - 1):
-            self.teachers_records[i] = tuple(
-                list((str(self.day_table[13].item(i, 0).text()), self.subjects_teachers_table_list_names[i])))
-        self.day_table[13].clearContents()
-        if flag:
-            self.teachers_records.append(tuple(list(('', ''))))
-            self.cursor.execute("INSERT INTO teachers (teachers, subjects) VALUES ('', '')")
-            self.conn.commit()
-        self.update_teachers_table(False)
 
     # инициализация таблицы с предметами
     def create_subject_tabel(self):
