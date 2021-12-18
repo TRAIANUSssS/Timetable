@@ -125,6 +125,10 @@ class MainWindow(QWidget):
 
     # Находим данные для основных таблиц
     def find_data_for_tabels(self, ):
+        self.subjects_combo_days_table = []
+        self.subjects_days_table_list_names = []
+        self.teachers_combo_days_table = []
+        self.teachers_days_table_list_names = []
         for index in range(12):
             self.cursor.execute(f"SELECT * FROM {self.tables_names[index // 2]} Where parity=%s AND week_day=%s",
                                 (str(True if index % 2 == 0 else False), str(self.tabs_names[index // 2])))
@@ -201,23 +205,27 @@ class MainWindow(QWidget):
         index_list = []
         teachers_list = []
         if subj != 'Нет пары':
-            print(subj)
+            # print(subj)
 
-        for i in range(len(self.subjects_teachers_table_list_names)):
-            # if subj != 'Нет пары':
-            #     print(subj, self.subjects_teachers_table_list_names[i])
-            if self.subjects_teachers_table_list_names[i] == subj:
+            for i in range(len(self.subjects_teachers_table_list_names)):
                 # if subj != 'Нет пары':
-                #     print(self.subjects_teachers_table_list_names[i], subj)
-                index_list.append(i)
-        for i in range(len(index_list)):
-            teachers_list.append(self.day_table[13].item(index_list[i], 0).text())
-            # print(teachers_list[i])
-        if not clear:
-            for i in range(len(teachers_list)):
-                if teachers_list[i] == first_teacher:
-                    teachers_list[i] = teachers_list[0]
-                    teachers_list[0] = first_teacher
+                #     print(subj, self.subjects_teachers_table_list_names[i])
+                if self.subjects_teachers_table_list_names[i] == subj:
+                    # if subj != 'Нет пары':
+                    #     print(self.subjects_teachers_table_list_names[i], subj)
+                    index_list.append(i)
+            for i in range(len(index_list)):
+                # print(i, first_teacher, index)
+                try:
+                    teachers_list.append(self.day_table[13].item(index_list[i], 0).text())
+                except:
+                    pass
+                # print(teachers_list[i])
+            if not clear:
+                for i in range(len(teachers_list)):
+                    if teachers_list[i] == first_teacher:
+                        teachers_list[i] = teachers_list[0]
+                        teachers_list[0] = first_teacher
         return teachers_list
 
     # Создание и заполнение списка с предматами в таблицах с днями
@@ -279,7 +287,6 @@ class MainWindow(QWidget):
             self.teachers_records[i] = tuple(
                 list((str(self.day_table[13].item(i, 0).text()), self.subjects_teachers_table_list_names[i])))
         self.day_table[13].clearContents()
-        # self.update_subsidiary_tabel(6,1)
         self.cursor.execute("DELETE FROM teachers WHERE id = (SELECT id FROM teachers ORDER BY id DESC LIMIT 1)")
         self.conn.commit()
         self.update_teachers_table(True)
@@ -297,9 +304,9 @@ class MainWindow(QWidget):
         # print(len(self.subjects_combo_teachers_table))
 
     def on_activated_days_tables(self, text, row, var, index):
-        print(text)
+        #print(text)
         records = []
-        print(records)
+        #print(records)
         for i in range(5):
             records.append([])
             for j in range(4):
@@ -309,12 +316,12 @@ class MainWindow(QWidget):
             records[i].append(self.day_table[index].item(i, 2).text())
             records[i].append('')
         records[row][4] = text
-        print(records)
+        #print(records)
         self.upload_tables(index, records)
 
     # Сохранение выбраной переменной из выпадающего списка
     def on_activated(self, text, index, var):
-        print(text)
+        #print(text)
         var[index] = text
 
     # Добавление строки в таблицу с учителями или обновление этой таблицы
@@ -325,6 +332,8 @@ class MainWindow(QWidget):
         self.day_table[13].clearContents()
         if flag:
             self.teachers_records.append(tuple(list(('', ''))))
+            self.cursor.execute("INSERT INTO teachers (teachers, subjects) VALUES ('', '')")
+            self.conn.commit()
         self.update_teachers_table(False)
 
     # инициализация таблицы с предметами
@@ -378,6 +387,8 @@ class MainWindow(QWidget):
             self.subjects_records[i] = tuple(list((str(self.day_table[12].item(i, 0).text()), '')))
         self.day_table[12].clearContents()
         self.subjects_records.append(tuple(list(('', ''))))
+        self.cursor.execute("INSERT INTO subjects (subjects) VALUES ('')")
+        self.conn.commit()
         self.update_subjects_table(False)
 
     # Инициализация кнопок обновления для каждой вкладки
@@ -404,11 +415,13 @@ class MainWindow(QWidget):
         self.conn.commit()
         if tab_id == 7:
             for i in range(self.day_table[12].rowCount() - 1 - count):
-                with contextlib.suppress(Exception):
+                try:
                     self.cursor.execute(
                         f"INSERT INTO {self.tables_names[tab_id]}  (subjects) VALUES (%s);",
                         (str(self.day_table[12].item(i, 0).text()),))
                     self.conn.commit()
+                except:
+                    pass
                 # except Exception:
                 #     pass
                     # self.cursor.execute(
@@ -418,14 +431,14 @@ class MainWindow(QWidget):
             for i in range(self.day_table[13].rowCount() - 1 - count):
                 # print(self.self.subjects_combo_teachers_table[i])
                 # print(self.day_table[13].item(i, 0))
-                print(i)
+                # print(i)
                 self.cursor.execute(
                     f"INSERT INTO {self.tables_names[tab_id]}  (teachers, subjects) VALUES (%s,%s);",
                     (str(self.day_table[13].item(i, 0).text()),
                      str(self.subjects_teachers_table_list_names[i])))
                 self.conn.commit()
-        for i in range(6):
-            self.update_subjects_table(i)
+        #for i in range(6):
+        self.update_subjects_table(False)
         self.create_subject_tabel()
         self.create_teachers_table()
         self.find_data_for_tabels()
@@ -447,7 +460,7 @@ class MainWindow(QWidget):
                     else:
                         row.append(self.teachers_days_table_list_names[index * 2 + k][i])
                 # print(self.subjects_days_table_list_names[0])
-                # print(row)
+                # print('row',row)
                 self.cursor.execute(
                     f"""INSERT INTO {self.tables_names[index]} 
                     (subject, time, audience, teacher, parity, week_day, number) 

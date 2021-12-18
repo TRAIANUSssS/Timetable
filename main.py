@@ -10,6 +10,8 @@ week = 0
 all_buttons = ["Понедельник", 'Вториник', "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье",
                "Расписание на текущуюю неделю", "Расписание на следующую неделю", '/help']
 
+commands = ["/start", "/help", "/week", "/mtuci"]
+
 tabels_names = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
 
 conn = psycopg2.connect(database="timetabel_db",
@@ -31,24 +33,34 @@ def start(message):
 @bot.message_handler(commands=['help'])
 def iNeedHelp(message):
     keyboard = types.ReplyKeyboardMarkup(True)
-    keyboard.add("/start")
+    keyboard = add_keybord()
     bot.send_message(message.chat.id,
-                     'Здравствуйте, это мой телеграм бот, который может показывать расписание, выбирайте день',
+                     'Здравствуйте, это мой телеграм бот, который может показывать расписание на один конкретный день или на все неделю сразу(нажмите на одну из кнопок снизу), а так же он может показать номер недели и её чётность(/week)',
                      reply_markup=keyboard)
 
 
 @bot.message_handler(commands=['week'])
 def tooday_week(message):
-    bot.send_message(message.chat.id, f'Текущая неделя: {week}')
+    bot.send_message(message.chat.id, f'''Текущая неделя: {week+1} \nЧётность недели: {'нижняя' if (week+1)%2 == 0 else 'верхняя'}''')
+
+
+@bot.message_handler(commands=['mtuci'])
+def start(message):
+    bot.send_message(message.chat.id,
+                     'Вот ссылочка на официальный сайт МТУСИ https://mtuci.ru/',)
 
 
 @bot.message_handler()
 def wrong(message: types.Message):
-    bot.send_message(message.chat.id, 'Неверная команда!')
+    if (message.text not in all_buttons) and (message.text not in commands):
+        bot.send_message(message.chat.id, 'Неверная команда!')
+    else:
+        answer(message)
 
 
 @bot.message_handler(content_types=['text'])
 def answer(message):
+    print(42)
     if message.text in all_buttons:
         if parity == -1:
             calc_parity()
@@ -78,13 +90,9 @@ def printTimetabel(message, index, all_days=False, reverse_parity=0):
         for i in range(6):
             cursor.execute(f"SELECT * FROM {tabels_names[i]}")
             records = list(cursor.fetchall())
-            line += get_line_with_timetable(records, par, index)
+            line += get_line_with_timetable(records, par, i)
     bot.send_message(message.chat.id, line)
 
-
-@bot.message_handler()
-def wrong(message: types.Message):
-    bot.send_message(message.chat.id, 'Неверная команда!')
 
 
 def get_line_with_timetable(records, par, index):
